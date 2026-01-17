@@ -1,0 +1,32 @@
+---
+
+trunk: &trunk
+  - 10
+  - 20
+  - 80
+
+vlan:
+  2:
+    vlan: [10]
+  3:
+    vlan: [10]
+  4:
+    vlan: [10]
+  5:
+    vlan: [10]
+  6:
+    vlan: [10]
+  7:
+    vlan:
+      - 10
+      - 80
+    native: 80
+  8:
+    vlan:
+      - 10
+      - 20
+    native: 20
+  9:
+    vlan: *trunk
+  10:
+    vlan: *trunk

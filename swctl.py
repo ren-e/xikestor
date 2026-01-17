@@ -19,7 +19,7 @@ def parse_args():
     parser.add_argument("-s", dest="save", action="store_true", help="Save configuration" )
     parser.add_argument("-k", dest="insecure", action="store_true", help="Ignore invalid certificate" )
     parser.add_argument("-u", dest="user", default="admin", help="Username")
-    parser.add_argument("-p", dest="password", help="Username")
+    parser.add_argument("-p", dest="password", required=True, help="Username")
     parser.add_argument("-c", dest="conf", default="vlan.yml", help="The VLAN configuration file")
 
     a = parser.parse_args()

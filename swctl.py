@@ -13,18 +13,18 @@ import yaml
 def parse_args():
     parser = argparse.ArgumentParser(description="Manage the XikeStor SKS3200-8E2X switch")
 
-    parser.add_argument("hostname", nargs="?", help="Target hostname (Required)" )
+    parser.add_argument("destination", nargs="?", help="Destination host (Required)" )
     parser.add_argument("-d", dest="debug", action="store_true", help="Enable debug output" )
     parser.add_argument("-a", dest="apply", action="store_true", help="Apply VLAN configuration" )
     parser.add_argument("-s", dest="save", action="store_true", help="Save configuration" )
     parser.add_argument("-k", dest="insecure", action="store_true", help="Ignore invalid certificate" )
     parser.add_argument("-u", dest="user", default="admin", help="Username")
-    parser.add_argument("-p", dest="password", required=True, help="Username")
+    parser.add_argument("-p", dest="password", required=True, help="Password")
     parser.add_argument("-c", dest="conf", default="vlan.yml", help="The VLAN configuration file")
 
     a = parser.parse_args()
-    if not a.hostname:
-        parser.error("hostname required")
+    if not a.destination:
+        parser.error("destination required")
 
     return a
 
@@ -33,11 +33,12 @@ class XikeStor:
     def __init__(self, args: argparse.Namespace):
 
         # Initialize class variables
-        self.base_url = f'https://{args.hostname}'
+        self.base_url = f'https://{args.destination}'
         self.debug    = args.debug
         self.session  = requests.Session()
         self.user     = hashlib.md5(args.user.encode()).hexdigest()
         self.bridge   = {}
+        self.verify   = not(args.insecure)
 
         # Initialize VLAN config from yaml configuration file
         if args.apply:
@@ -58,7 +59,7 @@ class XikeStor:
 
         for path in __login_paths:
             url = f'{self.base_url}/{path}'
-            r = self.session.get(url, verify=not(args.insecure))
+            r = self.session.get(url, verify=self.verify)
 
         if r.status_code != 200:
             raise ValueError('Invalid password!')
@@ -105,7 +106,7 @@ class XikeStor:
         url = f"{self.base_url}/port_vlan_cfg.json"
         if self.debug:
             print(json.dumps(jcfg, indent=4))
-        r = self.session.post(url, json=jcfg, verify=False)
+        r = self.session.post(url, json=jcfg, verify=self.verify)
         if r.status_code != 200:
             print("WARNING: Failed to update port config!")
             return False
@@ -146,7 +147,7 @@ class XikeStor:
         if self.debug:
             print(json.dumps(jcfg, indent=4))
 
-        r = self.session.post(url, json=jcfg, verify=False)
+        r = self.session.post(url, json=jcfg, verify=self.verify)
         if r.status_code != 200:
             print("WARNING: Couldn't update VLAN configuration!")
             return False
@@ -155,7 +156,7 @@ class XikeStor:
         return True
 
     def status(self) -> None:
-        r = self.session.get(f"{self.base_url}/status.json", verify=False)
+        r = self.session.get(f"{self.base_url}/status.json", verify=self.verify)
         print(json.dumps(r.json(), indent=4))
         return
 
@@ -185,7 +186,7 @@ class XikeStor:
         for action in [ "port", "tag" ]:
             url = f"{self.base_url}/save_{action}_vlan_map.json"
             jcfg = {}
-            r = self.session.post(url, json=jcfg, verify=False)
+            r = self.session.post(url, json=jcfg, verify=self.verify)
             if r.status_code != 200:
                 print(f"WARNING: Failed to save {action} cfg!")
                 return False
